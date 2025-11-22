@@ -1,25 +1,46 @@
-import axios from "axios";
-import Deal from "../models/Deal.js";
+// engines/affiliateEngine.js
+import AffiliateModel from "../models/Affiliate.js";
 
-export async function runAffiliateEngine() {
+export default async function AffiliateEngine() {
   try {
-    const products = [
-      { title: "Best Tech Deals", url: "https://www.amazon.com" },
-      { title: "Best Home Deals", url: "https://www.amazon.com" },
-      { title: "Trending Gadgets", url: "https://www.amazon.com" }
+    const keywords = [
+      "best gadgets 2025",
+      "top deals",
+      "amazon trending products"
     ];
 
-    for (const p of products) {
-      await Deal.create({
-        title: p.title,
-        url: `${p.url}?tag=${process.env.AMAZON_TAG}`,
-        platform: "amazon",
-        keyword: p.title
-      });
+    const results = [];
+
+    for (const kw of keywords) {
+      const slug = kw.toLowerCase().replace(/ /g, "-");
+
+      const url = `https://www.amazon.com/s?k=${encodeURIComponent(
+        kw
+      )}&tag=auraflowai-20`;
+
+      // FIX: Replace create() with UPSERT
+      const updated = await AffiliateModel.findOneAndUpdate(
+        { slug },
+        {
+          keyword: kw,
+          slug,
+          url,
+          updatedAt: new Date()
+        },
+        { upsert: true, new: true }
+      );
+
+      results.push(updated);
     }
 
-    return { status: "ok", items: products.length };
+    return {
+      status: "complete",
+      generatedLinks: results.length,
+      estimatedRevenue: results.length * 0.15,
+      links: results
+    };
   } catch (err) {
-    return { status: "error", error: err.message };
+    console.error("Affiliate Engine Error:", err.message);
+    return { status: "failed", error: err.message };
   }
 }

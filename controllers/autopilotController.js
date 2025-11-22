@@ -1,40 +1,52 @@
-import { runAffiliateEngine } from "../engines/affiliateEngine.js";
-import { generateSEOPage } from "../engines/seoEngine.js";
-import { generateBlogPost } from "../engines/blogEngine.js";
-import { generateViralTopic } from "../engines/viralEngine.js";
-import { generateDeals } from "../engines/dealsEngine.js";
+// controllers/autopilotController.js
+import AffiliateEngine from "../engines/affiliateEngine.js";
+import SEOEngine from "../engines/seoEngine.js";
+import Stats from "../models/Stats.js";
 import Logs from "../models/Logs.js";
 
-export async function runAutopilot() {
+export async function runAutopilot(req, res) {
   try {
-    console.log("🚀 Autopilot started...");
+    console.log("▶ Starting combined autopilot engine…");
 
-    const affiliateResult = await runAffiliateEngine();
-    const seoResult = await generateSEOPage();
-    const blogResult = await generateBlogPost();
-    const viralResult = await generateViralTopic();
-    const dealsResult = await generateDeals();
+    const affiliateResult = await AffiliateEngine();
+    const seoResult = await SEOEngine();
 
-    const logEntry = await Logs.create({
+    // Save run log
+    await Logs.create({
+      timestamp: new Date(),
       affiliate: affiliateResult,
-      seo: seoResult,
-      blog: blogResult,
-      trending: viralResult,
-      status: "completed",
+      seo: seoResult
     });
 
-    return {
-      status: "success",
-      affiliate: affiliateResult,
-      seo: seoResult,
-      blog: blogResult,
-      viral: viralResult,
-      deals: dealsResult,
-      log: logEntry,
-    };
+    // Update cumulative stats
+    await Stats.findOneAndUpdate(
+      {},
+      {
+        $inc: {
+          earnings: affiliateResult.estimatedRevenue || 0,
+          clicks: affiliateResult.generatedLinks || 0,
+          seo_pages: seoResult.pagesCreated || 0
+        }
+      },
+      { upsert: true }
+    );
 
-  } catch (error) {
-    console.error("❌ Autopilot Error:", error.message);
-    return { status: "error", error: error.message };
+    console.log("✓ Autopilot completed");
+
+    return res.json({
+      success: true,
+      message: "Autopilot executed successfully",
+      affiliateEngine: affiliateResult,
+      seoEngine: seoResult
+    });
+  } catch (err) {
+    console.error("❌ Autopilot failed:", err.message);
+    return res.status(500).json({
+      success: false,
+      message: "Autopilot failed",
+      error: err.message
+    });
   }
 }
+
+export default runAutopilot;

@@ -1,30 +1,43 @@
+// engines/seoEngine.js
 import SEOPage from "../models/SEOPage.js";
-import { slugify } from "../utils/slugify.js";
 
-export async function generateSEOPage() {
-  const topics = [
-    "Best travel hacks 2025",
-    "How to save money on flights",
-    "Popular shopping trends",
-    "Best budget gadgets",
-    "Healthy lifestyle tips"
-  ];
+export default async function SEOEngine() {
+  try {
+    const keywords = [
+      "best gadgets 2025",
+      "hot deals",
+      "amazon trending"
+    ];
 
-  const keyword = topics[Math.floor(Math.random() * topics.length)];
-  const slug = slugify(keyword);
+    const pages = [];
 
-  const content = `
-    <h2>${keyword}</h2>
-    <p>This guide explains everything about ${keyword}.</p>
-    <p>Top tips and insights updated automatically.</p>
-  `;
+    for (const kw of keywords) {
+      const slug = kw.toLowerCase().replace(/ /g, "-");
 
-  await SEOPage.create({
-    title: keyword,
-    slug,
-    content,
-    keyword
-  });
+      const url = `/seo/${slug}`;
 
-  return { status: "created", keyword, slug };
+      // FIX: UPSERT instead of create()
+      const updated = await SEOPage.findOneAndUpdate(
+        { slug },
+        {
+          keyword: kw,
+          slug,
+          url,
+          updatedAt: new Date()
+        },
+        { upsert: true, new: true }
+      );
+
+      pages.push(updated);
+    }
+
+    return {
+      status: "complete",
+      pagesCreated: pages.length,
+      pages
+    };
+  } catch (err) {
+    console.error("SEO Engine Error:", err.message);
+    return { status: "failed", error: err.message };
+  }
 }
