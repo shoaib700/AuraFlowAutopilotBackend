@@ -1,24 +1,21 @@
-// controllers/autopilotController.js
 import AffiliateEngine from "../engines/affiliateEngine.js";
 import SEOEngine from "../engines/seoEngine.js";
 import Stats from "../models/Stats.js";
 import Logs from "../models/Logs.js";
 
-export async function runAutopilot(req, res) {
+export async function runAutopilot(req = null, res = null) {
   try {
     console.log("▶ Starting combined autopilot engine…");
 
     const affiliateResult = await AffiliateEngine();
     const seoResult = await SEOEngine();
 
-    // Save run log
     await Logs.create({
       timestamp: new Date(),
       affiliate: affiliateResult,
       seo: seoResult
     });
 
-    // Update cumulative stats
     await Stats.findOneAndUpdate(
       {},
       {
@@ -33,14 +30,20 @@ export async function runAutopilot(req, res) {
 
     console.log("✓ Autopilot completed");
 
+    if (!res) return { success: true }; // scheduler FIX
+
     return res.json({
       success: true,
       message: "Autopilot executed successfully",
       affiliateEngine: affiliateResult,
       seoEngine: seoResult
     });
+
   } catch (err) {
     console.error("❌ Autopilot failed:", err.message);
+
+    if (!res) return { success: false, error: err.message }; // scheduler FIX
+
     return res.status(500).json({
       success: false,
       message: "Autopilot failed",

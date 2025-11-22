@@ -1,5 +1,4 @@
-// engines/affiliateEngine.js
-import AffiliateModel from "../models/Affiliate.js";
+import Affiliate from "../models/Affiliate.js";
 
 export default async function AffiliateEngine() {
   try {
@@ -18,8 +17,7 @@ export default async function AffiliateEngine() {
         kw
       )}&tag=auraflowai-20`;
 
-      // FIX: Replace create() with UPSERT
-      const updated = await AffiliateModel.findOneAndUpdate(
+      const updated = await Affiliate.findOneAndUpdate(
         { slug },
         {
           keyword: kw,
@@ -27,7 +25,7 @@ export default async function AffiliateEngine() {
           url,
           updatedAt: new Date()
         },
-        { upsert: true, new: true }
+        { upsert: true, new: true, strict: false }
       );
 
       results.push(updated);
@@ -40,7 +38,6 @@ export default async function AffiliateEngine() {
       links: results
     };
   } catch (err) {
-    console.error("Affiliate Engine Error:", err.message);
     return { status: "failed", error: err.message };
   }
 }

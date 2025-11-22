@@ -1,4 +1,3 @@
-// engines/seoEngine.js
 import SEOPage from "../models/SEOPage.js";
 
 export default async function SEOEngine() {
@@ -9,14 +8,12 @@ export default async function SEOEngine() {
       "amazon trending"
     ];
 
-    const pages = [];
+    const results = [];
 
     for (const kw of keywords) {
       const slug = kw.toLowerCase().replace(/ /g, "-");
-
       const url = `/seo/${slug}`;
 
-      // FIX: UPSERT instead of create()
       const updated = await SEOPage.findOneAndUpdate(
         { slug },
         {
@@ -25,19 +22,18 @@ export default async function SEOEngine() {
           url,
           updatedAt: new Date()
         },
-        { upsert: true, new: true }
+        { upsert: true, new: true, strict: false }
       );
 
-      pages.push(updated);
+      results.push(updated);
     }
 
     return {
       status: "complete",
-      pagesCreated: pages.length,
-      pages
+      pagesCreated: results.length,
+      pages: results
     };
   } catch (err) {
-    console.error("SEO Engine Error:", err.message);
     return { status: "failed", error: err.message };
   }
 }

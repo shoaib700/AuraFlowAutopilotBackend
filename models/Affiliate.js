@@ -1,11 +1,13 @@
 import mongoose from "mongoose";
 
-const AffiliateSchema = new mongoose.Schema({
-  keyword: { type: String, required: true },
-  url: { type: String, required: true },
-  createdAt: { type: Date, default: Date.now }
-});
+const AffiliateSchema = new mongoose.Schema(
+  {
+    keyword: { type: String, required: true },
+    slug: { type: String, required: true, unique: true },
+    url: { type: String, required: true },
+    updatedAt: { type: Date, default: Date.now }
+  },
+  { strict: true }
+);
 
-const AffiliateModel = mongoose.model("Affiliate", AffiliateSchema);
-
-export default AffiliateModel;
+export default mongoose.model("Affiliate", AffiliateSchema);
